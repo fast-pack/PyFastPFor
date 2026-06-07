@@ -18,7 +18,7 @@ namespace FastPForLib {
  */
 
 extern "C" {
-uint64_t svb_encode(uint8_t *out, const uint32_t *in, uint32_t count, int delta,
+size_t svb_encode(uint8_t *out, const uint32_t *in, uint32_t count, int delta,
                     int type);
 uint8_t *svb_decode_avx_simple(uint32_t *out, uint8_t *keyPtr, uint8_t *dataPtr,
                                uint64_t count);
@@ -46,11 +46,13 @@ class StreamVByte : public IntegerCODEC {
 public:
   void encodeArray(const uint32_t *in, const size_t count, uint32_t *out,
                    size_t &nvalue) {
-    uint64_t bytesWritten = svb_encode(
+    size_t bytesWritten = svb_encode(
         (uint8_t *)out, in, static_cast<uint32_t>(std::min<size_t>(
                                 count, std::numeric_limits<uint32_t>::max())),
         0, 1);
     nvalue = static_cast<size_t>(bytesWritten + 3) / 4;
+    for (size_t i = bytesWritten; i < nvalue * 4; ++i)
+      reinterpret_cast<uint8_t*>(out)[i] = 0;
   }
 
   const uint32_t *decodeArray(const uint32_t *in, const size_t /* count */,

@@ -1,10 +1,12 @@
 import os
+import platform
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
 import sys
 import setuptools
 
-__version__ = '1.4.0'
+# Package metadata (name, version, dependencies, ...) lives in pyproject.toml.
+# This file only declares the extension module and its custom build logic.
 
 maindir = os.path.join(".", "fastpfor")
 library_file = os.path.join(maindir, "libFastPFor.a")
@@ -12,8 +14,6 @@ source_files = ['pyfastpfor.cc']
 
 libraries = []
 extra_objects = []
-
-requirements_list = ['pybind11>=2.4', 'numpy']
 
 if os.path.exists(library_file):
     # if we have a prebuilt library file, use that.
@@ -55,6 +55,32 @@ def has_flag(compiler, flagname):
     return True
 
 
+def simd_flags(compiler):
+    """Return the SIMD/architecture compile flags.
+
+    FastPFor's SIMD code requires SSE4.2 on x86 (provided natively) and NEON on
+    ARM (provided through the fastpfor_neon.h shim, and part of the ARMv8-A
+    baseline, so no special flag is needed).
+
+    By default we use ``-march=native`` for the best performance, which is the
+    right choice for a source install built on the machine that runs it. For
+    redistributable wheels this is unsafe (the build machine may support
+    instructions the user's CPU lacks), so set ``PYFASTPFOR_PORTABLE=1`` to use
+    a portable baseline instead; the CI wheel builds do exactly that.
+    """
+    portable = os.environ.get('PYFASTPFOR_PORTABLE', '') not in ('', '0', 'false', 'False')
+    machine = platform.machine().lower()
+    is_x86 = machine in ('x86_64', 'amd64', 'x86', 'i386', 'i686')
+
+    if not portable and has_flag(compiler, '-march=native'):
+        return ['-march=native']
+    if is_x86 and has_flag(compiler, '-msse4.2'):
+        # Portable x86 baseline: SSE4.2 is the minimum FastPFor requires.
+        return ['-msse4.2']
+    # On ARM/aarch64 NEON is part of the baseline, so no extra flag is needed.
+    return []
+
+
 def cpp_flag(compiler):
     """Return the -std=c++[11/14] compiler flag.
 
@@ -73,10 +99,14 @@ def cpp_flag(compiler):
 
 class BuildExt(build_ext):
     """A custom build extension for adding compiler-specific options."""
+    # Note: language-specific standard flags (-std=c++11 / -std=c99) are NOT
+    # listed here. They are applied per source file in _compile_with_std below,
+    # because this extension mixes C and C++ sources and a C++ standard flag is
+    # rejected by the compiler on C sources (and vice versa).
     c_opts = {
         'msvc': ['/EHsc', '/openmp', '/O2'],
-        'unix': ['-O3', '-march=native', '-std=c99'],
-        #'unix': ['-O0', '-march=native', '-g'],
+        'unix': ['-O3'],
+        #'unix': ['-O0', '-g'],
     }
     link_opts = {
         'unix': [],
@@ -84,18 +114,18 @@ class BuildExt(build_ext):
     }
 
     if sys.platform == 'darwin':
-        c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
-        link_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
+        c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.9']
+        link_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.9']
     else:
         c_opts['unix'].append("-fopenmp")
         link_opts['unix'].extend(['-fopenmp', '-pthread'])
 
     def build_extensions(self):
         ct = self.compiler.compiler_type
-        opts = self.c_opts.get(ct, [])
+        opts = list(self.c_opts.get(ct, []))
         if ct == 'unix':
             opts.append('-DVERSION_INFO="%s"' % self.distribution.get_version())
-            opts.append(cpp_flag(self.compiler))
+            opts.extend(simd_flags(self.compiler))
             if has_flag(self.compiler, '-fvisibility=hidden'):
                 opts.append('-fvisibility=hidden')
         elif ct == 'msvc':
@@ -117,20 +147,38 @@ class BuildExt(build_ext):
                 np.get_include()
             ])
 
+        if ct == 'unix':
+            self._patch_compiler_for_mixed_languages()
+
         build_ext.build_extensions(self)
+
+    def _patch_compiler_for_mixed_languages(self):
+        """Apply the right -std flag to each source based on its language.
+
+        distutils applies one set of compile args to every source in an
+        extension, but here C++ sources (.cc/.cpp) need -std=c++11 while C
+        sources (.c) need -std=c99. We wrap the compiler's _compile method to
+        add the appropriate standard flag (and drop C++-only flags on C).
+        """
+        compiler = self.compiler
+        original_compile = compiler._compile
+        cxx_std = cpp_flag(compiler)
+        cxx_only = ('-stdlib=libc++',)
+
+        def _compile(obj, src, ext, cc_args, extra_postargs, pp_opts):
+            postargs = list(extra_postargs)
+            if src.endswith(('.cpp', '.cxx', '.cc', '.c++')):
+                postargs.append(cxx_std)
+            elif src.endswith('.c'):
+                postargs = [a for a in postargs if a not in cxx_only]
+                postargs.append('-std=c99')
+            return original_compile(obj, src, ext, cc_args, postargs, pp_opts)
+
+        compiler._compile = _compile
 
 
 setup(
-    name='pyfastpfor',
-    version=__version__,
-    description='Python bindings for the FastPFor library (fast integer compression)',
-    author='Lemire et al. for FastPFor',
-    url='https://github.com/searchivarius/PyFastPFor',
-    long_description="""Pythong bindings for FastPFor: A research library with integer compression schemes. FastPFor is broadly applicable to the compression of arrays of 32-bit integers where most integers are small. The library seeks to exploit SIMD instructions (SSE) whenever possible. This library can decode at least 4 billions of compressed integers per second on most desktop or laptop processors. That is, it can decompress data at a rate of 15 GB/s. This is significantly faster than generic codecs like gzip, LZO, Snappy or LZ4.""",
     ext_modules=ext_modules,
-    install_requires=requirements_list,
-    setup_requires=requirements_list,
     cmdclass={'build_ext': BuildExt},
-    test_suite="tests",
     zip_safe=False,
 )

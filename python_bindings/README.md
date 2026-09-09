@@ -1,0 +1,1 @@
+Python bindings for FastPFor: a research library with fast integer-compression schemes for arrays of 32-bit integers. It exploits SIMD instructions (SSE on x86, NEON on ARM) and can decode billions of integers per second.

@@ -32,9 +32,9 @@ classifiers = [
 dependencies = ["numpy"]
 
 [project.urls]
-Homepage = "https://github.com/searchivarius/PyFastPFor"
-Repository = "https://github.com/searchivarius/PyFastPFor"
-Issues = "https://github.com/searchivarius/PyFastPFor/issues"
+Homepage = "https://github.com/fast-pack/PyFastPFor"
+Repository = "https://github.com/fast-pack/PyFastPFor"
+Issues = "https://github.com/fast-pack/PyFastPFor/issues"
 
 [tool.setuptools]
 # pyfastpfor is a single C++ extension module with no pure-Python packages, so

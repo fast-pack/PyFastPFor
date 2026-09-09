@@ -3,8 +3,8 @@
 # Apache License Version 2.0 http://www.apache.org/licenses/.
 #
 # This is a modified version of the CMakeFile
-# for the project https://github.com/lemire/FastPFor 
-# This file can be used to 
+# for the project https://github.com/lemire/FastPFor
+# This file can be used to
 #   1) Build a library separately. Then, this library
 #      will be re-used by the Python build process
 #   2) Build and run unit and performance tests.
@@ -21,7 +21,7 @@ include(AppendCompilerFlags)
 
 
 project(PyFastPFor CXX C)
-set(PROJECT_URL "https://github.com/searchivarius/PyFastPFOR")
+set(PROJECT_URL "https://github.com/fast-pack/PyFastPFOR")
 set(PROJECT_DESCRIPTION "Python bindings for the FastPFOR C++ library: Fast integer compression")
 include(DetectCPUFeatures)
 #

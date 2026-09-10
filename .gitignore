@@ -1,0 +1,32 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C/C++ extensions and objects
+*.so
+*.o
+*.a
+
+# Distribution / packaging
+.Python
+env/
+venv/
+build/
+develop-eggs/
+dist/
+eggs/
+.eggs/
+sdist/
+var/
+wheels/
+wheelhouse/
+*.egg-info/
+*.egg
+
+# CMake build directories
+cmake-build-*/
+
+# Editor / OS cruft
+.DS_Store
+*.swp

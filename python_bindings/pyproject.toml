@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=77.0.0", "wheel", "pybind11>=2.4", "numpy"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyfastpfor"
+version = "1.5.0"
+description = "Python bindings for the FastPFor library (fast integer compression)"
+    readme = "README.md"
+requires-python = ">=3.9"
+license = "Apache-2.0"
+authors = [
+    {name = "Daniel Lemire", email = "daniel@lemire.me"},
+    {name = "Leonid Boytsov"},
+]
+keywords = ["integer compression", "simd", "fastpfor", "bitpacking", "varint", "performance"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries",
+]
+dependencies = ["numpy"]
+
+[project.urls]
+Homepage = "https://github.com/fast-pack/PyFastPFor"
+Repository = "https://github.com/fast-pack/PyFastPFor"
+Issues = "https://github.com/fast-pack/PyFastPFor/issues"
+
+[tool.setuptools]
+# pyfastpfor is a single C++ extension module with no pure-Python packages, so
+# disable setuptools' automatic package discovery (which would otherwise pick up
+# the `fastpfor` source symlink).
+packages = []
+py-modules = []
+
+[tool.cibuildwheel]
+# Skip PyPy (the pybind11 extension targets CPython) and the slow/rare 32-bit
+# and musllinux targets to keep the wheel matrix lean.
+skip = ["pp*", "*-musllinux*", "*_i686", "*-win32"]
+build-frontend = "build"
+# Published wheels must run on any CPU of the target architecture, so build with
+# a portable SIMD baseline rather than -march=native (see setup.py:simd_flags).
+environment = { PYFASTPFOR_PORTABLE = "1" }
+# Smoke-test every built wheel: import it and exercise the codec factory.
+test-command = 'python -c "import pyfastpfor; assert pyfastpfor.getCodecList(); print(pyfastpfor.__version__, len(pyfastpfor.getCodecList()), \"codecs\")"'
+
+[tool.cibuildwheel.linux]
+archs = ["native"]
+
+[tool.cibuildwheel.macos]
+archs = ["native"]
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]

@@ -273,7 +273,7 @@ SIMDNewPFor<BlockSizeInUnitsOfPackSize, ExceptionCoder>::decodeArray(
     in += 4 * b;
     out += 128;
 
-    for (uint32_t e = 0, lpos = -1; e < nExceptions; e++) {
+    for (uint32_t e = 0, lpos = 0u-1; e < nExceptions; e++) {
       lpos += exceptions[e] + 1;
       beginout[lpos] |= (exceptions[e + nExceptions] + 1) << b;
     }

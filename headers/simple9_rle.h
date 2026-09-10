@@ -272,7 +272,7 @@ public:
     if (MarkLength) {
       *out++ = static_cast<uint32_t>(length);
     }
-    auto count = Simple9_Codec::Compress(input, 0, length, out, 0);
+    auto count = Simple9_Codec::Compress(input, 0, uint32_t(length), out, 0);
     nvalue = count;
   }
 
@@ -289,7 +289,7 @@ public:
       fprintf(stderr, "possible overrun\n");
     }
     auto count = actualvalue;
-    Simple9_Codec::Decompress(input, 0, out, 0, count);
+    Simple9_Codec::Decompress(input, 0, out, 0, uint32_t(count));
     nvalue = MarkLength ? actualvalue : count;
     input += count;
     return input;

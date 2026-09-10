@@ -129,7 +129,7 @@ class BuildExt(build_ext):
             if has_flag(self.compiler, '-fvisibility=hidden'):
                 opts.append('-fvisibility=hidden')
         elif ct == 'msvc':
-            opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
+            opts.append('/DVERSION_INFO="%s"' % self.distribution.get_version())
 
         # extend include dirs here (don't assume numpy/pybind11 are installed when first run, since
         # pip could have installed them as part of executing this script

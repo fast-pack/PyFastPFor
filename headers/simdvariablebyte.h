@@ -13,6 +13,8 @@
 #include "common.h"
 #include "codecs.h"
 
+namespace FastPForLib {
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -26,7 +28,7 @@ size_t masked_vbyte_read_loop_fromcompressedsize(const uint8_t *in,
 /**
  * SIMD-accelerated version of VariableByteAlt.
  */
-class MaskedVByte : public FastPForLib::IntegerCODEC {
+class MaskedVByte : public IntegerCODEC {
 public:
   MaskedVByte() {}
 
@@ -77,7 +79,7 @@ public:
         ++bout;
       }
     }
-    while (FastPForLib::needPaddingTo32Bits(bout)) {
+    while (needPaddingTo32Bits(bout)) {
       *bout++ = 0xFFU;
     }
     const size_t storageinbytes = bout - initbout;
@@ -89,9 +91,11 @@ public:
     const uint8_t *inbyte = reinterpret_cast<const uint8_t *>(in);
     nvalue = masked_vbyte_read_loop_fromcompressedsize(inbyte, out, length * 4);
     return reinterpret_cast<const uint32_t *>(inbyte);
-    return in + length;
   }
 
   std::string name() const { return "MaskedVByte"; }
 };
+
+} // namespace FastPForLib
+
 #endif /* SIMDVARIABLEBYTE_H_ */

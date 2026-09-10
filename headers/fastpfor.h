@@ -236,11 +236,11 @@ class FastPForImpl {
     inexcept += (sizeof(IntType) + sizeof(uint32_t) - 1) / sizeof(uint32_t);
     for (uint32_t k = 2; k <= sizeof(IntType) * 8; ++k) {
       if ((bitmap & (1ULL << (k - 1))) != 0) {
-        uint32_t nvalue = *inexcept;
-        datatobepacked[k].resize((nvalue + PACKSIZE - 1) / PACKSIZE * PACKSIZE);
+        uint32_t tnvalue = *inexcept;
+        datatobepacked[k].resize((tnvalue + PACKSIZE - 1) / PACKSIZE * PACKSIZE);
         inexcept = packingvector<32>::unpackmetight(
             inexcept, datatobepacked[k].data(), datatobepacked[k].size(), k);
-        datatobepacked[k].resize(nvalue);
+        datatobepacked[k].resize(tnvalue);
       }
     }
     length = inexcept - initin;

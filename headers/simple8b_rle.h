@@ -267,7 +267,7 @@ public:
     // this may lead to unaligned access. Performance may be affected.
     // not much of an effect in practice on recent Intel processors.
     uint64_t *out64 = reinterpret_cast<uint64_t *>(out);
-    auto count = Simple8b_Codec::Compress(in, 0, length, out64, 0);
+    auto count = Simple8b_Codec::Compress(in, 0, uint32_t(length), out64, 0);
     nvalue = count * 2;
   }
 
@@ -296,7 +296,7 @@ public:
 
     uint32_t pos = 0;
 
-    pos = Simple8b_Codec::Decompress(in64, 0, out, 0, nvalue);
+    pos = Simple8b_Codec::Decompress(in64, 0, out, 0, uint32_t(nvalue));
 
     assert(in64 + pos <= finalin64);
     in = reinterpret_cast<const uint32_t *>(in64 + pos);

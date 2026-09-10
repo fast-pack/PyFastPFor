@@ -410,7 +410,7 @@ void Simple8b<MarkLength>::encodeArray(const uint32_t *in, const size_t length,
         assert(which(out64) == 14);
     } else if (tryme<1, 60>(in, ValuesRemaining)) {
       out64[0] = 15;
-      NumberOfValuesCoded = (ValuesRemaining < 1) ? ValuesRemaining : 1;
+      NumberOfValuesCoded = (ValuesRemaining < 1) ? uint32_t(ValuesRemaining) : 1;
       for (uint32_t i = 0; i < NumberOfValuesCoded; i++)
         bit_writer(out64, *in++, 60);
       out64[0] <<= 64 - SIMPLE8B_LOGDESC - 60 * NumberOfValuesCoded;
@@ -637,9 +637,9 @@ const uint32_t *Simple8b<MarkLength>::decodeArray(const uint32_t *in,
     printf("simple8b stats[%u]=%f\n", k, stats[k] * 1.0 / sum);
   }
 #endif
-  assert(in64 <= finalin64);
+  assert(len == 0 || in64 <= finalin64);
   in = reinterpret_cast<const uint32_t *>(in64);
-  assert(in <= endin);
+  assert(len == 0 || in <= endin);
   // check that we don't overrun the buffer too much?
   ASSERT(out < end + 240, std::to_string(out - end));
   nvalue = MarkLength ? actualvalue : out - initout;

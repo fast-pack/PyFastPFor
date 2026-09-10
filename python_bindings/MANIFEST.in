@@ -1,9 +1,8 @@
 include pyfastpfor.cc
-recursive-include ./fastpfor/src *.cpp *.c *.cc 
+include pyproject.toml
+recursive-include ./fastpfor/src *.cpp *.c
 recursive-include ./fastpfor/headers *.h
-include README.md
 include requirements.txt
-include LICENSE
 
 global-exclude fastpfor/src/benchbitpacking.cpp
 global-exclude fastpfor/src/csv2maropu.cpp

@@ -47,17 +47,7 @@ else()
 	check_cxx_source_compiles("${AVXPROG}" SUPPORT_AVX)
 	set(CMAKE_REQUIRED_FLAGS "-march=native -mavx2")
 	check_cxx_source_compiles("${AVX2PROG}" SUPPORT_AVX2)
-endif()
+endif()	
 
 set(CMAKE_REQUIRED_FLAGS ${OLD_CMAKE_REQUIRED_FLAGS})
-
-# On ARM the SSE intrinsics used throughout FastPFor are provided by the
-# fastpfor_neon.h shim (mapped onto NEON), so there is no SSE4.2 support but the
-# code still compiles. Flag ARM builds so the SIMD-specific compiler options
-# (e.g. -msse4.1) can be skipped.
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "arm64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "arm"
-    OR CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64"
-    OR CMAKE_GENERATOR_PLATFORM MATCHES "ARM64" OR CMAKE_GENERATOR_PLATFORM MATCHES "ARM")
-	set(SUPPORT_NEON ON)
-endif ()
 	

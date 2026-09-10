@@ -271,6 +271,7 @@ void simplebenchmark(uint32_t N = 1U << 16, uint32_t T = 1U << 9) {
   }
 }
 
+/*
 int main() {
   cout << "# cache-to-cache" << endl;
   simplebenchmark(1U << 16, 1U << 9);
@@ -280,3 +281,4 @@ int main() {
 
   return 0;
 }
+*/

@@ -7,9 +7,6 @@
  *      Fabrizio Silvestri <fabrizio.silvestri_at_isti.cnr.it>
  *      Rossano Venturini <rossano.venturini_at_isti.cnr.it>
  *   which was available  under the Apache License, Version 2.0.
- *
- * The Simple9 scheme may overflow the buffer when decoding.
- * This is a limitation of the original implementation..
  */
 #ifndef SIMPLE9_H_
 #define SIMPLE9_H_
@@ -37,7 +34,7 @@ public:
   }
   template <uint32_t num1, uint32_t log1>
   static bool tryme(const uint32_t *n, size_t len) {
-    const uint32_t min = (len < num1) ? uint32_t(len) : num1;
+    const uint32_t min = (len < num1) ? len : num1;
     for (uint32_t i = 0; i < min; i++) {
       if ((n[i]) >= (1U << log1))
         return false;
@@ -94,7 +91,7 @@ void Simple9<MarkLength, hacked>::encodeArray(const uint32_t *in,
   uint32_t NumberOfValuesCoded;
   const uint32_t *const initout(out);
   if (MarkLength)
-    *(out++) = uint32_t(length);
+    *(out++) = length;
   size_t ValuesRemaining(length);
   // precompute
   const bool becareful = false;
@@ -190,12 +187,12 @@ void Simple9<MarkLength, hacked>::encodeArray(const uint32_t *in,
   while (ValuesRemaining > 0) {
     if (hacked && trymefull<28, 0>(in)) {
       out[0] = 9 << (32 - SIMPLE9_LOGDESC);
-      NumberOfValuesCoded = (ValuesRemaining < 28) ? uint32_t(ValuesRemaining) : 28;
+      NumberOfValuesCoded = (ValuesRemaining < 28) ? ValuesRemaining : 28;
       in += NumberOfValuesCoded;
     } else if (tryme<28, 1>(in, ValuesRemaining)) {
       out[0] = 0;
 
-      NumberOfValuesCoded = (ValuesRemaining < 28) ? uint32_t(ValuesRemaining) : 28;
+      NumberOfValuesCoded = (ValuesRemaining < 28) ? ValuesRemaining : 28;
       for (uint32_t i = 0; i < NumberOfValuesCoded; i++)
         bit_writer(out, *in++, 1);
       *out <<= 28 - NumberOfValuesCoded;
@@ -204,7 +201,7 @@ void Simple9<MarkLength, hacked>::encodeArray(const uint32_t *in,
     } else if (tryme<14, 2>(in, ValuesRemaining)) {
       out[0] = 1;
 
-      NumberOfValuesCoded = (ValuesRemaining < 14) ? uint32_t(ValuesRemaining) : 14;
+      NumberOfValuesCoded = (ValuesRemaining < 14) ? ValuesRemaining : 14;
       for (uint32_t i = 0; i < NumberOfValuesCoded; i++)
         bit_writer(out, *in++, 2);
       *out <<= 28 - 2 * NumberOfValuesCoded;
@@ -212,7 +209,7 @@ void Simple9<MarkLength, hacked>::encodeArray(const uint32_t *in,
         assert(which(out) == 1);
     } else if (tryme<9, 3>(in, ValuesRemaining)) {
       out[0] = 2;
-      NumberOfValuesCoded = (ValuesRemaining < 9) ? uint32_t(ValuesRemaining) : 9;
+      NumberOfValuesCoded = (ValuesRemaining < 9) ? ValuesRemaining : 9;
       for (uint32_t i = 0; i < NumberOfValuesCoded; i++)
         bit_writer(out, *in++, 3);
       *out <<= 28 - 3 * NumberOfValuesCoded;
@@ -221,7 +218,7 @@ void Simple9<MarkLength, hacked>::encodeArray(const uint32_t *in,
     } else if (tryme<7, 4>(in, ValuesRemaining)) {
       out[0] = 3;
 
-      NumberOfValuesCoded = (ValuesRemaining < 7) ? uint32_t(ValuesRemaining) : 7;
+      NumberOfValuesCoded = (ValuesRemaining < 7) ? ValuesRemaining : 7;
       for (uint32_t i = 0; i < NumberOfValuesCoded; i++)
         bit_writer(out, *in++, 4);
       *out <<= 28 - 4 * NumberOfValuesCoded;
@@ -230,7 +227,7 @@ void Simple9<MarkLength, hacked>::encodeArray(const uint32_t *in,
     } else if (tryme<5, 5>(in, ValuesRemaining)) {
       out[0] = 4;
 
-      NumberOfValuesCoded = (ValuesRemaining < 5) ? uint32_t(ValuesRemaining) : 5;
+      NumberOfValuesCoded = (ValuesRemaining < 5) ? ValuesRemaining : 5;
       for (uint32_t i = 0; i < NumberOfValuesCoded; i++)
         bit_writer(out, *in++, 5);
       *out <<= 28 - 5 * NumberOfValuesCoded;
@@ -238,7 +235,7 @@ void Simple9<MarkLength, hacked>::encodeArray(const uint32_t *in,
         assert(which(out) == 4);
     } else if (tryme<4, 7>(in, ValuesRemaining)) {
       out[0] = 5;
-      NumberOfValuesCoded = (ValuesRemaining < 4) ? uint32_t(ValuesRemaining) : 4;
+      NumberOfValuesCoded = (ValuesRemaining < 4) ? ValuesRemaining : 4;
       for (uint32_t i = 0; i < NumberOfValuesCoded; i++)
         bit_writer(out, *in++, 7);
 
@@ -247,7 +244,7 @@ void Simple9<MarkLength, hacked>::encodeArray(const uint32_t *in,
         assert(which(out) == 5);
     } else if (tryme<3, 9>(in, ValuesRemaining)) {
       out[0] = 6;
-      NumberOfValuesCoded = (ValuesRemaining < 3) ? uint32_t(ValuesRemaining) : 3;
+      NumberOfValuesCoded = (ValuesRemaining < 3) ? ValuesRemaining : 3;
       for (uint32_t i = 0; i < NumberOfValuesCoded; i++)
         bit_writer(out, *in++, 9);
       *out <<= 28 - 9 * NumberOfValuesCoded;
@@ -255,7 +252,7 @@ void Simple9<MarkLength, hacked>::encodeArray(const uint32_t *in,
         assert(which(out) == 6);
     } else if (tryme<2, 14>(in, ValuesRemaining)) {
       out[0] = 7;
-      NumberOfValuesCoded = (ValuesRemaining < 2) ? uint32_t(ValuesRemaining) : 2;
+      NumberOfValuesCoded = (ValuesRemaining < 2) ? ValuesRemaining : 2;
       for (uint32_t i = 0; i < NumberOfValuesCoded; i++)
         bit_writer(out, *in++, 14);
       *out <<= 28 - 14 * NumberOfValuesCoded;
@@ -295,7 +292,7 @@ Simple9<MarkLength, hacked>::decodeArray(const uint32_t *in, const size_t /* len
   if (MarkLength)
     if ((*in) > nvalue)
       throw NotEnoughStorage(*in);
-  const uint32_t actualvalue = MarkLength ? *(in++) : (uint32_t)nvalue;
+  const uint32_t actualvalue = MarkLength ? *(in++) : nvalue;
   if (nvalue < actualvalue)
     fprintf(stderr, "possible overrun\n");
   nvalue = actualvalue;

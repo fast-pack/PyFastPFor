@@ -3,13 +3,13 @@
 # Apache License Version 2.0 http://www.apache.org/licenses/.
 #
 # This is a modified version of the CMakeFile
-# for the project https://github.com/lemire/FastPFor
-# This file can be used to
+# for the project https://github.com/lemire/FastPFor 
+# This file can be used to 
 #   1) Build a library separately. Then, this library
 #      will be re-used by the Python build process
 #   2) Build and run unit and performance tests.
 #
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 2.8.7)
 if (NOT CMAKE_BUILD_TYPE)
 		message(STATUS "No build type selected, default to Release")
 		set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
@@ -21,7 +21,7 @@ include(AppendCompilerFlags)
 
 
 project(PyFastPFor CXX C)
-set(PROJECT_URL "https://github.com/fast-pack/PyFastPFOR")
+set(PROJECT_URL "https://github.com/searchivarius/PyFastPFOR")
 set(PROJECT_DESCRIPTION "Python bindings for the FastPFOR C++ library: Fast integer compression")
 include(DetectCPUFeatures)
 #
@@ -54,10 +54,8 @@ MESSAGE( STATUS "CMAKE_C_COMPILER: " ${CMAKE_C_COMPILER} )
 MESSAGE( STATUS "CXX_COMPILER_VERSION: " ${CXX_COMPILER_VERSION} )
 if( SUPPORT_SSE42 )
     MESSAGE( STATUS "SSE 4.2 support detected" )
-elseif( SUPPORT_NEON )
-    MESSAGE( STATUS "ARM NEON detected: SSE intrinsics are emulated via fastpfor_neon.h" )
 else()
-    MESSAGE( STATUS "Neither SSE 4.2 nor ARM NEON support detected" )
+    MESSAGE( STATUS "SSE 4.2 support not detected" )
 endif()
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
@@ -81,21 +79,14 @@ elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     set (CMAKE_CXX_FLAGS_DEBUG   "-Wall -ggdb   -std=c++11 -DHAVE_CXX0X  -march=native")
     set (CMAKE_C_FLAGS_RELEASE "-Wall -Ofast  -DNDEBUG -std=c99  -march=native")
     set (CMAKE_C_FLAGS_DEBUG   "-Wall -ggdb   -std=c99  -march=native")
-elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
+elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
     if (CXX_COMPILER_VERSION VERSION_LESS 4.2.1)
         message(STATUS  "Clang version must be at least 4.2.1!" )
     endif()
-    # -msse4.1 is x86-only and rejected on ARM; -march=native already enables the
-    # available SIMD (SSE/AVX on x86, NEON on ARM), so only add it off ARM.
-    if (SUPPORT_NEON)
-        set (SIMD_FLAGS "-march=native")
-    else()
-        set (SIMD_FLAGS "-msse4.1 -march=native")
-    endif()
-    set (CMAKE_CXX_FLAGS_RELEASE "-Wall -Wcast-align -O3 -DNDEBUG -std=c++11 -DHAVE_CXX0X ${SIMD_FLAGS}")
-    set (CMAKE_CXX_FLAGS_DEBUG   "-Wall -Wcast-align -ggdb  -std=c++11 -DHAVE_CXX0X ${SIMD_FLAGS}")
-    set (CMAKE_C_FLAGS_RELEASE "-Wall -Wcast-align -O3 -DNDEBUG -std=c99 ${SIMD_FLAGS}")
-    set (CMAKE_C_FLAGS_DEBUG   "-Wall -Wcast-align -ggdb  -std=c99 ${SIMD_FLAGS}")
+    set (CMAKE_CXX_FLAGS_RELEASE "-Wall -Wcast-align -O3 -DNDEBUG -std=c++11 -DHAVE_CXX0X -msse4.1 -march=native")
+    set (CMAKE_CXX_FLAGS_DEBUG   "-Wall -Wcast-align -ggdb  -std=c++11 -DHAVE_CXX0X -msse4.1 -march=native")
+    set (CMAKE_C_FLAGS_RELEASE "-Wall -Wcast-align -O3 -DNDEBUG -std=c99 -msse4.1 -march=native")
+    set (CMAKE_C_FLAGS_DEBUG   "-Wall -Wcast-align -ggdb  -std=c99 -msse4.1 -march=native")
 elseif(WIN32)
     # TODO add support for later versions?
     if(NOT MSVC12)

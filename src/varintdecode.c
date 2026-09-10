@@ -5,27 +5,22 @@
 
 #if defined(_MSC_VER)
      /* Microsoft C/C++-compatible compiler */
-    #if (defined(_M_IX86) || defined(_M_AMD64))
-    #include <intrin.h>
-    #elif defined(_M_ARM64)
-    #include "fastpfor_neon.h"
-    #endif
+     #include <intrin.h>
 #elif defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
-    /* GCC-compatible compiler, targeting x86/x86-64 */
-    #include <x86intrin.h>
-
-#elif defined(__aarch64__)
-    /* GCC-compatible compiler, targeting ARM with NEON */
-    #include "fastpfor_neon.h"
+     /* GCC-compatible compiler, targeting x86/x86-64 */
+     #include <x86intrin.h>
+#elif defined(__GNUC__) && defined(__ARM_NEON__)
+     /* GCC-compatible compiler, targeting ARM with NEON */
+     #include <arm_neon.h>
 #elif defined(__GNUC__) && defined(__IWMMXT__)
-    /* GCC-compatible compiler, targeting ARM with WMMX */
-    #include <mmintrin.h>
+     /* GCC-compatible compiler, targeting ARM with WMMX */
+     #include <mmintrin.h>
 #elif (defined(__GNUC__) || defined(__xlC__)) && (defined(__VEC__) || defined(__ALTIVEC__))
-    /* XLC or GCC-compatible compiler, targeting PowerPC with VMX/VSX */
-    #include <altivec.h>
+     /* XLC or GCC-compatible compiler, targeting PowerPC with VMX/VSX */
+     #include <altivec.h>
 #elif defined(__GNUC__) && defined(__SPE__)
-    /* GCC-compatible compiler, targeting PowerPC with SPE */
-    #include <spe.h>
+     /* GCC-compatible compiler, targeting PowerPC with SPE */
+     #include <spe.h>
 #endif
 #include <stdint.h>
 
@@ -1210,7 +1205,7 @@ size_t masked_vbyte_read_loop(const uint8_t *in, uint32_t *out,
     } while (count + 112 < length); // 112 == 48 + 48 ahead for scanning + up to
                                     // 16 remaining in sig
     sig = (nextSig << (scanned - consumed - 48)) | sig;
-    availablebytes = (int)(scanned - consumed);
+    availablebytes = scanned - consumed;
   }
   while (availablebytes + count < length) {
     if (availablebytes < 16) {
@@ -1241,7 +1236,7 @@ size_t masked_vbyte_read_loop(const uint8_t *in, uint32_t *out,
     uint64_t eaten =
         masked_vbyte_read_group(in + consumed, out + count, sig, &ints_read);
     consumed += eaten;
-    availablebytes -= (int)eaten;
+    availablebytes -= eaten;
     sig >>= eaten;
     count += ints_read;
   }
@@ -1328,7 +1323,7 @@ size_t altmasked_vbyte_read_loop(const uint8_t *in, uint32_t *out,
       }
     }
     sig = (nextSig << (scanned - consumed - 48)) | sig;
-    availablebytes = (int)(scanned - consumed);
+    availablebytes = scanned - consumed;
   }
   while (1) {
     if (availablebytes < 16) {
@@ -1359,7 +1354,7 @@ size_t altmasked_vbyte_read_loop(const uint8_t *in, uint32_t *out,
     uint64_t eaten =
         masked_vbyte_read_group(in + consumed, out + count, sig, &ints_read);
     consumed += eaten;
-    availablebytes -= (int)eaten;
+    availablebytes -= eaten;
     sig >>= eaten;
     count += ints_read;
   }
@@ -1447,7 +1442,7 @@ size_t masked_vbyte_read_loop_fromcompressedsize(const uint8_t *in,
       }
     }
     sig = (nextSig << (scanned - consumed - 48)) | sig;
-    availablebytes = (int)(scanned - consumed);
+    availablebytes = scanned - consumed;
   }
   while (1) {
     if (availablebytes < 16) {
@@ -1477,7 +1472,7 @@ size_t masked_vbyte_read_loop_fromcompressedsize(const uint8_t *in,
     uint64_t bytes =
         masked_vbyte_read_group(in + consumed, out, sig, &ints_read);
     consumed += bytes;
-    availablebytes -= (int)bytes;
+    availablebytes -= bytes;
     sig >>= bytes;
     out += ints_read;
   }
@@ -1575,7 +1570,7 @@ size_t altmasked_vbyte_read_loop_fromcompressedsize(const uint8_t *in,
       }
     }
     sig = (nextSig << (scanned - consumed - 48)) | sig;
-    availablebytes = (int)(scanned - consumed);
+    availablebytes = scanned - consumed;
   }
   while (1) {
     if (availablebytes < 16) {
@@ -1605,7 +1600,7 @@ size_t altmasked_vbyte_read_loop_fromcompressedsize(const uint8_t *in,
     uint64_t bytes =
         masked_vbyte_read_group(in + consumed, out, sig, &ints_read);
     consumed += bytes;
-    availablebytes -= (int)bytes;
+    availablebytes -= bytes;
     sig >>= bytes;
     out += ints_read;
   }

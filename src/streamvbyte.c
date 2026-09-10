@@ -6,31 +6,26 @@
 // no particular alignment is assumed or guaranteed for any elements
 
 #if defined(_MSC_VER)
-    /* Microsoft C/C++-compatible compiler */
-    #if (defined(_M_IX86) || defined(_M_AMD64))
-    #include <intrin.h>
-    #elif defined(_M_ARM64)
-    #include "fastpfor_neon.h"
-    #endif
-
-    #include <iso646.h>
-    #include <stdint.h>
-    #define __restrict__ __restrict
+     /* Microsoft C/C++-compatible compiler */
+     #include <intrin.h>
+     #include <iso646.h>
+     #include <stdint.h>
+     #define __restrict__ __restrict
 #elif defined(__GNUC__) && (defined(__x86_64__) || defined(__i386__))
-    /* GCC-compatible compiler, targeting x86/x86-64 */
-    #include <x86intrin.h>
-#elif defined(__aarch64__)
-    /* GCC-compatible compiler, targeting ARM with NEON */
-    #include "fastpfor_neon.h"
+     /* GCC-compatible compiler, targeting x86/x86-64 */
+     #include <x86intrin.h>
+#elif defined(__GNUC__) && defined(__ARM_NEON__)
+     /* GCC-compatible compiler, targeting ARM with NEON */
+     #include <arm_neon.h>
 #elif defined(__GNUC__) && defined(__IWMMXT__)
-    /* GCC-compatible compiler, targeting ARM with WMMX */
-    #include <mmintrin.h>
+     /* GCC-compatible compiler, targeting ARM with WMMX */
+     #include <mmintrin.h>
 #elif (defined(__GNUC__) || defined(__xlC__)) && (defined(__VEC__) || defined(__ALTIVEC__))
-    /* XLC or GCC-compatible compiler, targeting PowerPC with VMX/VSX */
-    #include <altivec.h>
+     /* XLC or GCC-compatible compiler, targeting PowerPC with VMX/VSX */
+     #include <altivec.h>
 #elif defined(__GNUC__) && defined(__SPE__)
-    /* GCC-compatible compiler, targeting PowerPC with SPE */
-    #include <spe.h>
+     /* GCC-compatible compiler, targeting PowerPC with SPE */
+     #include <spe.h>
 #endif
 
 #include <stdint.h>
@@ -261,7 +256,7 @@ uint8_t *svb_insert_scalar_d1_init(uint8_t *keyPtr, uint8_t *dataPtr,
 
       // first insert the new key
       uint8_t code = _encode_data(new_key - prev, &dataPtr);
-      *keyPtr = (uint8_t)(key | (code << shift));
+      *keyPtr = key | (code << shift);
 
       // then update the current key
       shift += 2;
@@ -290,7 +285,7 @@ uint8_t *svb_insert_scalar_d1_init(uint8_t *keyPtr, uint8_t *dataPtr,
   uint8_t code = _encode_data(new_key - prev, &dataPtr);
   key &= ~(3 << shift);
   key |= code << shift;
-  *keyPtr = (uint8_t)(key); // write last key (no increment needed)
+  *keyPtr = key; // write last key (no increment needed)
 
   *position = count;
   return dataPtrBegin + dataSize + code + 1;
@@ -623,7 +618,7 @@ static const int8_t shuffleTable[256][16] = {
 // static char HighTo32[16] = {8, 9, -1, -1, 10, 11, -1, -1, 12, 13, -1, -1, 14,
 // 15, -1, -1};
 // Byte Order: {0x0706050403020100, 0x0F0E0D0C0B0A0908}
-#if !defined(_MSC_VER) || defined(__clang__) || (defined(_MSC_VER) && defined(_M_ARM64))
+#if !defined(_MSC_VER) || defined(__clang__)
 static const xmm_t High16To32 = { (long long)0xFFFF0B0AFFFF0908, (long long)0xFFFF0F0EFFFF0D0C};
 #else
 static const xmm_t High16To32 = {8,  9,  -1, -1, 10, 11, -1, -1,
@@ -884,7 +879,7 @@ uint8_t *svb_decode_avx_simple(uint32_t *out, uint8_t *__restrict__ keyPtr,
   return svb_decode_scalar(out, keyPtr + consumedkeys, dataPtr, count & 31);
 }
 
-size_t svb_encode(uint8_t *out, const uint32_t *in, uint32_t count, int delta,
+uint64_t svb_encode(uint8_t *out, const uint32_t *in, uint32_t count, int delta,
                     int type) {
   *(uint32_t *)out = count;          // first 4 bytes is number of ints
   uint8_t *keyPtr = out + 4;         // keys come immediately after 32-bit count
@@ -903,7 +898,7 @@ size_t svb_encode(uint8_t *out, const uint32_t *in, uint32_t count, int delta,
   abort();
 }
 
-size_t svb_decode(uint32_t *out, uint8_t *in, int delta, int type) {
+uint64_t svb_decode(uint32_t *out, uint8_t *in, int delta, int type) {
   uint32_t count = *(uint32_t *)in; // first 4 bytes is number of ints
   if (count == 0)
     return 0;

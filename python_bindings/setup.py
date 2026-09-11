@@ -122,13 +122,21 @@ class BuildExt(build_ext):
     def build_extensions(self):
         ct = self.compiler.compiler_type
         opts = list(self.c_opts.get(ct, []))
+        debug_info = os.environ.get('PYFASTPFOR_DEBUG_INFO') == '1'
         if ct == 'unix':
+            opts.append('-g' if debug_info else '-g0')
             opts.append('-DVERSION_INFO="%s"' % self.distribution.get_version())
             opts.extend(simd_flags(self.compiler))
             if has_flag(self.compiler, '-fvisibility=hidden'):
                 opts.append('-fvisibility=hidden')
         elif ct == 'msvc':
+            if debug_info:
+                opts.append('/Zi')
             opts.append('/DVERSION_INFO="%s"' % self.distribution.get_version())
+
+        link_opts = list(self.link_opts.get(ct, []))
+        if ct == 'msvc' and debug_info:
+            link_opts.append('/DEBUG')
 
         # extend include dirs here (don't assume numpy/pybind11 are installed when first run, since
         # pip could have installed them as part of executing this script
@@ -136,7 +144,7 @@ class BuildExt(build_ext):
         import numpy as np
         for ext in self.extensions:
             ext.extra_compile_args.extend(opts)
-            ext.extra_link_args.extend(self.link_opts.get(ct, []))
+            ext.extra_link_args.extend(link_opts)
             ext.include_dirs.extend([
                 # Path to pybind11 headers
                 pybind11.get_include(),

@@ -56,7 +56,14 @@ python -m build
 pip install dist/*.whl
 ```
 
-The bindings build with GCC or Clang, on both x86-64 (SSE/AVX) and ARM/aarch64 (NEON, including Apple Silicon). You may also need to install Python dev-files. On Ubuntu, for Python 3 you can do it as follows:
+Debug information is disabled by default. To include it in a local build, set
+`PYFASTPFOR_DEBUG_INFO=1` when building:
+
+```
+PYFASTPFOR_DEBUG_INFO=1 python -m build
+```
+
+The bindings build with GCC, Clang, or MSVC, on both x86-64 (SSE/AVX) and ARM/aarch64 (NEON, including Apple Silicon). You may also need to install Python dev-files. On Ubuntu, for Python 3 you can do it as follows:
 
 ```
 sudo apt-get install python3-dev

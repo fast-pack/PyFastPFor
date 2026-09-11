@@ -42,7 +42,10 @@ jobs:
       matrix:
         # Native runners for each architecture we publish: x86_64 Linux,
         # aarch64 Linux, x86_64 macOS, Apple Silicon macOS, and x86_64 Windows.
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-13, macos-latest, windows-latest]
+        # macos-latest currently tracks macos-26 (arm64); macos-26-intel keeps
+        # the x86_64 macOS build on the same OS/Xcode generation.
+        # See available runner images/labels: https://github.com/actions/runner-images
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-26-intel, macos-26, windows-latest]
 
     steps:
       - uses: actions/download-artifact@v8

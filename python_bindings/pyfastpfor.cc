@@ -2,7 +2,7 @@
  * PyFastPFOR
  *
  * Python bindings for the FastPFOR library:
- * https://github.com/lemire/FastPFor 
+ * https://github.com/lemire/FastPFor
  *
  * This code is released under the
  * Apache License Version 2.0 http://www.apache.org/licenses/.
@@ -11,6 +11,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <mutex>
 #include <string>
 
 #include <pybind11/pybind11.h>
@@ -27,6 +28,9 @@ using namespace FastPForLib;
 
 const char * module_name = "pyfastpfor";
 
+// encodeArray/decodeArray release the GIL for the duration of the call; mutex_
+// serializes concurrent calls on the same instance since the underlying
+// codec's scratch state isn't otherwise safe for concurrent use.
 struct IntegerCODECWrapper {
 public:
   IntegerCODECWrapper(const std::string& codecName) {
@@ -36,13 +40,14 @@ public:
          py::array_t<uint32_t, py::array::c_style> input, size_t inputSize,
          py::array_t<uint32_t, py::array::c_style> output, size_t outputSize) {
     py::gil_scoped_release l;
+    std::lock_guard<std::mutex> lock(mutex_);
 
     const uint32_t* inpBuff = input.data();
 
     uint32_t*       outBuff = output.mutable_data();
     size_t          compSize = outputSize;
 
-    codec_->encodeArray(inpBuff, inputSize, 
+    codec_->encodeArray(inpBuff, inputSize,
                         outBuff, compSize);
 
     return compSize;
@@ -51,6 +56,7 @@ public:
          py::array_t<uint32_t, py::array::c_style> input, size_t inputSize,
          py::array_t<uint32_t, py::array::c_style> output, size_t outputSize) {
     py::gil_scoped_release l;
+    std::lock_guard<std::mutex> lock(mutex_);
 
     const uint32_t* inpBuff = input.data();
 
@@ -64,16 +70,21 @@ public:
 private:
   CODECFactory factory;
   IntegerCODEC* codec_;
+  std::mutex mutex_;
 };
 
-/* 
- * PYBIND11_MODULE is a replacement for PYBIND11_PLUGIN 
+/*
+ * PYBIND11_MODULE is a replacement for PYBIND11_PLUGIN
  * introduced in Pybind 2.2. However, we don't require
- * Pybind to be >= 2.0 so we attempt to support older 
+ * Pybind to be >= 2.0 so we attempt to support older
  * Pybind versions as well.
  */
 #ifdef PYBIND11_MODULE
-PYBIND11_MODULE(pyfastpfor, m) {
+// mod_gil_not_used (pybind11 >= 2.13) declares this module free-threading
+// safe: every codec object owns its own private CODECFactory/codec state
+// (no cross-instance sharing), and the module-scope statics in vsencoding.h
+// are populated once at load and only read afterward.
+PYBIND11_MODULE(pyfastpfor, m, py::mod_gil_not_used()) {
   m.doc() = "Python Bindings for FastPFor library (fast integer compression).";
 #else
 PYBIND11_PLUGIN(pyfastpfor) {
@@ -94,7 +105,7 @@ PYBIND11_PLUGIN(pyfastpfor) {
     [](const std::string & codecName) {
       // We know that FastPFor will keep this shared pointer alive forever
       // so it is safe just to reference codec
-      return py::cast(new IntegerCODECWrapper(codecName), 
+      return py::cast(new IntegerCODECWrapper(codecName),
                       py::return_value_policy::take_ownership);
     },
     py::arg("codecName"),
@@ -204,8 +215,8 @@ PYBIND11_PLUGIN(pyfastpfor) {
 
 void exportCodecs(py::module& m) {
   py::class_<IntegerCODECWrapper>(m, "IntegerCODEC")
-  .def("encodeArray", &IntegerCODECWrapper::encodeArray, 
-      py::arg("input"), py::arg("inputSize"), 
+  .def("encodeArray", &IntegerCODECWrapper::encodeArray,
+      py::arg("input"), py::arg("inputSize"),
       py::arg("output"), py::arg("outputSize"),
       "Compress input array.\n\n"
       "Parameters\n"
@@ -213,7 +224,7 @@ void exportCodecs(py::module& m) {
       "input: numpy C-style contiguous array to be compressed, e.g.:\n"
       "     input = numpy.array(range(256), dtype = np.uint32).ravel()\n"
       "inputSize: a number of integers to compress: it can be less than\n"
-      "     than the total number of integers in the numpy array.\n" 
+      "     than the total number of integers in the numpy array.\n"
       "output: numpy C-style contiguous array with compressed data, e.g.:\n"
       "     output = np.zeros(buffSize, dtype = np.uint32).ravel()\n"
       "outputSize: a capacity of the output buffer: it can be less than\n"
@@ -223,7 +234,7 @@ void exportCodecs(py::module& m) {
       "----------\n"
       "     A number of integers in the compressed output.")
   .def("decodeArray", &IntegerCODECWrapper::decodeArray,
-      py::arg("input"), py::arg("inputSize"), 
+      py::arg("input"), py::arg("inputSize"),
       py::arg("output"), py::arg("outputSize"),
       "Uncompress input array.\n\n"
       "Parameters\n"
@@ -231,7 +242,7 @@ void exportCodecs(py::module& m) {
       "input: numpy C-style contiguous array to be uncompressed, e.g.:\n"
       "     input = numpy.array(range(256), dtype = np.uint32).ravel()\n"
       "inputSize: a number of integers to compress: it can be less than\n"
-      "     than the total number of integers in the numpy array.\n" 
+      "     than the total number of integers in the numpy array.\n"
       "output: numpy C-style contiguous array with compressed data, e.g.:\n"
       "     output = np.zeros(buffSize, dtype = np.uint32).ravel()\n"
       "outputSize: a capacity of the output buffer: it can be less than\n"
@@ -243,4 +254,3 @@ void exportCodecs(py::module& m) {
       )
   ;
 }
-

@@ -7,6 +7,9 @@
  *      Fabrizio Silvestri <fabrizio.silvestri_at_isti.cnr.it>
  *      Rossano Venturini <rossano.venturini_at_isti.cnr.it>
  *   which was available  under the Apache License, Version 2.0.
+ *
+ * The Simple16 scheme may overflow the buffer when decoding.
+ * This is a limitation of the original implementation..
  */
 
 #ifndef SIMPLE16_H_
@@ -487,7 +490,7 @@ void Simple16<MarkLength>::encodeArray(const uint32_t *in, const size_t length,
       NumberOfValuesCoded += base;
     } else if (tryme<1, 3, 4, 4, 3, 3>(in, ValuesRemaining)) {
       out[0] = 6;
-      NumberOfValuesCoded = (ValuesRemaining < 1) ? ValuesRemaining : 1;
+      NumberOfValuesCoded = (ValuesRemaining < 1) ? uint32_t(ValuesRemaining) : 1;
       for (uint32_t i = 0; i < NumberOfValuesCoded; i++)
         bit_writer(out, *in++, 3);
       uint32_t fill = 3 * NumberOfValuesCoded;
@@ -593,7 +596,7 @@ void Simple16<MarkLength>::encodeArray(const uint32_t *in, const size_t length,
         assert(which(out) == 12);
     } else if (tryme<1, 10, 2, 9>(in, ValuesRemaining)) {
       out[0] = 13;
-      NumberOfValuesCoded = (ValuesRemaining < 1) ? ValuesRemaining : 1;
+      NumberOfValuesCoded = (ValuesRemaining < 1) ? uint32_t(ValuesRemaining) : 1;
       for (uint32_t i = 0; i < NumberOfValuesCoded; i++)
         bit_writer(out, *in++, 10);
       const uint32_t base = NumberOfValuesCoded;
@@ -745,7 +748,7 @@ const uint32_t *Simple16<MarkLength>::decodeArray(const uint32_t *in,
     printf("simple16 stats[%u]=%f\n", k, stats[k] * 1.0 / sum);
   }
 #endif
-  ASSERT(in <= endin, std::to_string(in - endin));
+  ASSERT(len == 0 || in <= endin, std::to_string(in - endin));
   return in;
 }
 

@@ -310,7 +310,7 @@ public:
   void loadACopy(std::vector<DataType> &buffer, size_t begin,
                  size_t end) const {
     buffer.resize(end - begin);
-    int result = fseek(fd, begin * sizeofdata * sizeof(Type), SEEK_SET);
+    int result = fseek(fd, (long)(begin * sizeofdata * sizeof(Type)), SEEK_SET);
     if (result != 0) {
       std::cerr << "could not seek to " << begin << std::endl;
       throw std::runtime_error("bad seek");
@@ -335,7 +335,7 @@ public:
       throw std::runtime_error("file not open");
     }
     DataType ans(sizeofdata);
-    int result = fseek(fd, pos * sizeofdata * sizeof(Type), SEEK_SET);
+    int result = fseek(fd, (long)(pos * sizeofdata * sizeof(Type)), SEEK_SET);
     if (result != 0) {
       std::cerr << "could not seek to " << pos << std::endl;
       throw std::runtime_error("bad seek");
@@ -367,7 +367,7 @@ public:
   }
 
   void copyAt(const std::vector<DataType> &buffer, size_t begin) {
-    int result = fseek(fd, begin * sizeofdata * sizeof(Type), SEEK_SET);
+    int result = fseek(fd, (long)(begin * sizeofdata * sizeof(Type)), SEEK_SET);
     if (result != 0) {
       std::cerr << "could not seek to " << begin << std::endl;
       throw std::runtime_error("bad seek");

@@ -7,13 +7,14 @@
 #ifndef SIMDFASTPFOR_H_
 #define SIMDFASTPFOR_H_
 
-#include "codecs.h"
 #include "common.h"
-#include "memutil.h"
+#include "codecs.h"
 #include "simdbitpacking.h"
+#include "usimdbitpacking.h"
+#include "memutil.h"
+#include "util.h"
 #include "simple8b.h"
 #include "usimdbitpacking.h"
-#include "util.h"
 
 namespace FastPForLib {
 
@@ -40,11 +41,12 @@ namespace FastPForLib {
  * patented.
  *
  */
-template <uint32_t BlockSizeInUnitsOfPackSize = 8> // BlockSizeInUnitsOfPackSize can have value 4 or 8
+template <uint32_t BlockSizeInUnitsOfPackSize =
+              8> // BlockSizeInUnitsOfPackSize can have value 4 or 8
 class SIMDFastPFor : public IntegerCODEC {
 public:
-  using IntegerCODEC::decodeArray;
   using IntegerCODEC::encodeArray;
+  using IntegerCODEC::decodeArray;
 
   /**
    * ps (page size) should be a multiple of BlockSize, any "large"
@@ -64,7 +66,8 @@ public:
     BlockSize = BlockSizeInUnitsOfPackSize * PACKSIZE
   };
 
-  static uint32_t *packblockupsimd(const uint32_t *source, uint32_t *out, const uint32_t bit) {
+  static uint32_t *packblockupsimd(const uint32_t *source, uint32_t *out,
+                                   const uint32_t bit) {
     for (int k = 0; k < BlockSize; k += 128) {
       SIMD_fastpack_32(source, reinterpret_cast<__m128i *>(out), bit);
       out += 4 * bit;
@@ -73,7 +76,8 @@ public:
     return out;
   }
 
-  static const uint32_t *unpackblocksimd(const uint32_t *source, uint32_t *out, const uint32_t bit) {
+  static const uint32_t *unpackblocksimd(const uint32_t *source, uint32_t *out,
+                                         const uint32_t bit) {
     for (int k = 0; k < BlockSize; k += 128) {
       SIMD_fastunpack_32(reinterpret_cast<const __m128i *>(source), out, bit);
       source += 4 * bit;
@@ -83,7 +87,8 @@ public:
   }
 
   template <class STLContainer>
-  static const uint32_t *unpackmesimd(const uint32_t *in, STLContainer &out, const uint32_t bit) {
+  static const uint32_t *unpackmesimd(const uint32_t *in, STLContainer &out,
+                                      const uint32_t bit) {
     const uint32_t size = *in;
     ++in;
     out.resize((size + 32 - 1) / 32 * 32);
@@ -111,7 +116,8 @@ public:
   }
 
   template <class STLContainer>
-  static uint32_t *packmeupwithoutmasksimd(STLContainer &source, uint32_t *out, const uint32_t bit) {
+  static uint32_t *packmeupwithoutmasksimd(STLContainer &source, uint32_t *out,
+                                           const uint32_t bit) {
     const uint32_t size = static_cast<uint32_t>(source.size());
     *out = size;
     out++;
@@ -162,7 +168,8 @@ public:
     const uint32_t *const finalout(out + nvalue);
     while (out != finalout) {
       size_t thisnvalue(0);
-      size_t thissize = static_cast<size_t>(finalout > PageSize + out ? PageSize : (finalout - out));
+      size_t thissize = static_cast<size_t>(
+          finalout > PageSize + out ? PageSize : (finalout - out));
 
       __decodeArray(in, thisnvalue, out, thissize);
       in += thisnvalue;
@@ -181,7 +188,8 @@ public:
    * BlockSizeInUnitsOfPackSize * PACKSIZE. (This was done
    * to simplify slightly the implementation.)
    */
-  void encodeArray(const uint32_t *in, const size_t length, uint32_t *out, size_t &nvalue) override {
+  void encodeArray(const uint32_t *in, const size_t length, uint32_t *out,
+                   size_t &nvalue) override {
     checkifdivisibleby(length, BlockSize);
 #ifndef NDEBUG
     const uint32_t *const initout(out);
@@ -192,7 +200,8 @@ public:
     const size_t oldnvalue = nvalue;
     nvalue = 1;
     while (in != finalin) {
-      size_t thissize = static_cast<size_t>(finalin > PageSize + in ? PageSize : (finalin - in));
+      size_t thissize = static_cast<size_t>(
+          finalin > PageSize + in ? PageSize : (finalin - in));
       size_t thisnvalue(0);
       __encodeArray(in, thissize, out, thisnvalue);
       nvalue += thisnvalue;
@@ -202,16 +211,17 @@ public:
     assert(out == nvalue + initout);
     if (oldnvalue < nvalue)
       fprintf(stderr,
-              "It is possible we have a buffer overrun. You reported having allocated "
-              "%zu bytes for the compressed data but we needed "
-              "%zu bytes. Please increase the available memory "
-              "for compressed data or check the value of the last parameter provided "
-              "to the encodeArray method.\n",
-              oldnvalue * sizeof(uint32_t), nvalue * sizeof(uint32_t));
+          "It is possible we have a buffer overrun. You reported having allocated "
+          "%zu bytes for the compressed data but we needed "
+          "%zu bytes. Please increase the available memory "
+          "for compressed data or check the value of the last parameter provided "
+          "to the encodeArray method.\n",
+          oldnvalue * sizeof(uint32_t), nvalue * sizeof(uint32_t));
     resetBuffer(); // if you don't do this, the buffer has a memory
   }
 
-  void getBestBFromData(const uint32_t *in, uint8_t &bestb, uint8_t &bestcexcept, uint8_t &maxb) {
+  void getBestBFromData(const uint32_t *in, uint8_t &bestb,
+                        uint8_t &bestcexcept, uint8_t &maxb) {
     uint32_t freqs[33];
     for (uint32_t k = 0; k <= 32; ++k)
       freqs[k] = 0;
@@ -227,7 +237,8 @@ public:
     bestcexcept = static_cast<uint8_t>(cexcept);
     for (uint32_t b = bestb - 1; b < 32; --b) {
       cexcept += freqs[b + 1];
-      uint32_t thiscost = cexcept * overheadofeachexcept + cexcept * (maxb - b) + b * BlockSize +
+      uint32_t thiscost = cexcept * overheadofeachexcept +
+                          cexcept * (maxb - b) + b * BlockSize +
                           8; // the  extra 8 is the cost of storing maxbits
       if (thiscost < bestcost) {
         bestcost = thiscost;
@@ -237,21 +248,24 @@ public:
     }
   }
 
-  void __encodeArray(const uint32_t *in, const size_t length, uint32_t *out, size_t &nvalue) {
+  void __encodeArray(const uint32_t *in, const size_t length, uint32_t *out,
+                     size_t &nvalue) {
     uint32_t *const initout = out; // keep track of this
     checkifdivisibleby(length, BlockSize);
     uint32_t *const headerout = out++; // keep track of this
     for (uint32_t k = 0; k < 32 + 1; ++k)
       datatobepacked[k].clear();
     uint8_t *bc = &bytescontainer[0];
-    for (const uint32_t *const final = in + length; (in + BlockSize <= final); in += BlockSize) {
+    for (const uint32_t *const final = in + length; (in + BlockSize <= final);
+         in += BlockSize) {
       uint8_t bestb, bestcexcept, maxb;
       getBestBFromData(in, bestb, bestcexcept, maxb);
       *bc++ = bestb;
       *bc++ = bestcexcept;
       if (bestcexcept > 0) {
         *bc++ = maxb;
-        std::vector<uint32_t, cacheallocator> &thisexceptioncontainer = datatobepacked[maxb - bestb];
+        std::vector<uint32_t, cacheallocator> &thisexceptioncontainer =
+            datatobepacked[maxb - bestb];
         const uint32_t maxval = 1U << bestb;
         for (uint32_t k = 0; k < BlockSize; ++k) {
           if (in[k] >= maxval) {
@@ -264,13 +278,14 @@ public:
       out = packblockupsimd(in, out, bestb);
     }
     headerout[0] = static_cast<uint32_t>(out - headerout);
-    const uint32_t bytescontainersize = static_cast<uint32_t>(bc - &bytescontainer[0]);
+    const uint32_t bytescontainersize =
+        static_cast<uint32_t>(bc - &bytescontainer[0]);
     *(out++) = bytescontainersize;
     memcpy(out, &bytescontainer[0], bytescontainersize);
-    uint8_t *pad8 = (uint8_t *)out + bytescontainersize;
+    uint8_t* pad8 = (uint8_t*)out + bytescontainersize;
     out += (bytescontainersize + sizeof(uint32_t) - 1) / sizeof(uint32_t);
-    while (pad8 < (uint8_t *)out)
-      *pad8++ = 0; // clear padding bytes
+    while (pad8 < (uint8_t*)out)
+        *pad8++ = 0; // clear padding bytes
 
     uint32_t bitmap = 0;
     for (uint32_t k = 2; k <= 32; ++k) {
@@ -285,7 +300,8 @@ public:
     nvalue = out - initout;
   }
 
-  void __decodeArray(const uint32_t *in, size_t &length, uint32_t *out, const size_t nvalue) {
+  void __decodeArray(const uint32_t *in, size_t &length, uint32_t *out,
+                     const size_t nvalue) {
     const uint32_t *const initin = in;
     const uint32_t *const headerin = in++;
     const uint32_t wheremeta = headerin[0];
@@ -300,7 +316,8 @@ public:
       }
     }
     length = inexcept - initin;
-    std::vector<uint32_t, cacheallocator>::const_iterator unpackpointers[32 + 1];
+    std::vector<uint32_t, cacheallocator>::const_iterator
+        unpackpointers[32 + 1];
     for (uint32_t k = 1; k <= 32; ++k) {
       unpackpointers[k] = datatobepacked[k].begin();
     }
@@ -316,7 +333,8 @@ public:
             out[pos] |= static_cast<uint32_t>(1) << b;
           }
         } else {
-          std::vector<uint32_t, cacheallocator>::const_iterator &exceptionsptr = unpackpointers[maxbits - b];
+          std::vector<uint32_t, cacheallocator>::const_iterator &exceptionsptr =
+              unpackpointers[maxbits - b];
           for (uint32_t k = 0; k < cexcept; ++k) {
             const uint8_t pos = *(bytep++);
             out[pos] |= (*(exceptionsptr++)) << b;
@@ -327,7 +345,9 @@ public:
     assert(in == headerin + wheremeta);
   }
 
-  std::string name() const override { return std::string("SIMDFastPFor") + std::to_string(BlockSize); }
+  std::string name() const override {
+    return std::string("SIMDFastPFor") + std::to_string(BlockSize);
+  }
 };
 
 /**
@@ -343,10 +363,11 @@ public:
  * http://arxiv.org/abs/1209.2137
  *
  */
-template <class EXCEPTIONCODER = Simple8b<true>> class SIMDSimplePFor : public IntegerCODEC {
+template <class EXCEPTIONCODER = Simple8b<true>>
+class SIMDSimplePFor : public IntegerCODEC {
 public:
-  using IntegerCODEC::decodeArray;
   using IntegerCODEC::encodeArray;
+  using IntegerCODEC::decodeArray;
 
   EXCEPTIONCODER ecoder;
   /**
@@ -354,7 +375,8 @@ public:
    * value should do.
    */
   SIMDSimplePFor(uint32_t ps = 65536)
-      : ecoder(), PageSize(ps), bitsPageSize(gccbits(PageSize)), datatobepacked(PageSize),
+      : ecoder(), PageSize(ps), bitsPageSize(gccbits(PageSize)),
+        datatobepacked(PageSize),
         bytescontainer(PageSize + 3 * PageSize / BlockSize) {
     assert(ps / BlockSize * BlockSize == ps);
     assert(gccbits(static_cast<uint32_t>(BlockSizeInUnitsOfPackSize * PACKSIZE - 1)) <= 8);
@@ -374,7 +396,8 @@ public:
   std::vector<uint32_t> datatobepacked;
   std::vector<uint8_t> bytescontainer;
 
-  const uint32_t *decodeArray(const uint32_t *in, const size_t length, uint32_t *out, size_t &nvalue) override {
+  const uint32_t *decodeArray(const uint32_t *in, const size_t length,
+                              uint32_t *out, size_t &nvalue) override {
     const uint32_t *const initin(in);
     const size_t mynvalue = *in;
     ++in;
@@ -384,7 +407,8 @@ public:
     const uint32_t *const finalout(out + nvalue);
     while (out != finalout) {
       size_t thisnvalue = length - (in - initin);
-      size_t thissize = static_cast<size_t>(finalout > PageSize + out ? PageSize : (finalout - out));
+      size_t thissize = static_cast<size_t>(
+          finalout > PageSize + out ? PageSize : (finalout - out));
 
       __decodeArray(in, thisnvalue, out, thissize);
       in += thisnvalue;
@@ -399,7 +423,8 @@ public:
    * BlockSizeInUnitsOfPackSize * PACKSIZE. (This was done
    * to simplify slightly the implementation.)
    */
-  void encodeArray(const uint32_t *in, const size_t length, uint32_t *out, size_t &nvalue) override {
+  void encodeArray(const uint32_t *in, const size_t length, uint32_t *out,
+                   size_t &nvalue) override {
     checkifdivisibleby(length, BlockSize);
     const uint32_t *const initout(out);
     const uint32_t *const finalin(in + length);
@@ -408,7 +433,8 @@ public:
     const size_t oldnvalue = nvalue;
     nvalue = 1;
     while (in != finalin) {
-      size_t thissize = static_cast<size_t>(finalin > PageSize + in ? PageSize : (finalin - in));
+      size_t thissize = static_cast<size_t>(
+          finalin > PageSize + in ? PageSize : (finalin - in));
       size_t thisnvalue = oldnvalue - (out - initout);
       __encodeArray(in, thissize, out, thisnvalue);
       nvalue += thisnvalue;
@@ -418,15 +444,16 @@ public:
     assert(out == nvalue + initout);
     if (oldnvalue < nvalue)
       fprintf(stderr,
-              "It is possible we have a buffer overrun. You reported having allocated "
-              "%zu bytes for the compressed data but we needed "
-              "%zu bytes. Please increase the available memory "
-              "for compressed data or check the value of the last parameter provided "
-              "to the encodeArray method.\n",
-              oldnvalue * sizeof(uint32_t), nvalue * sizeof(uint32_t));
+          "It is possible we have a buffer overrun. You reported having allocated "
+          "%zu bytes for the compressed data but we needed "
+          "%zu bytes. Please increase the available memory "
+          "for compressed data or check the value of the last parameter provided "
+          "to the encodeArray method.\n",
+          oldnvalue * sizeof(uint32_t), nvalue * sizeof(uint32_t));
   }
 
-  void getBestBFromData(const uint32_t *in, uint8_t &bestb, uint8_t &bestcexcept, uint8_t &maxb) {
+  void getBestBFromData(const uint32_t *in, uint8_t &bestb,
+                        uint8_t &bestcexcept, uint8_t &maxb) {
     uint32_t freqs[33];
     for (uint32_t k = 0; k <= 32; ++k)
       freqs[k] = 0;
@@ -442,7 +469,8 @@ public:
     bestcexcept = static_cast<uint8_t>(cexcept);
     for (uint32_t b = bestb - 1; b < 32; --b) {
       cexcept += freqs[b + 1];
-      uint32_t thiscost = cexcept * overheadofeachexcept + cexcept * (maxb - b) + b * BlockSize;
+      uint32_t thiscost =
+          cexcept * overheadofeachexcept + cexcept * (maxb - b) + b * BlockSize;
       if (thiscost < bestcost) {
         bestcost = thiscost;
         bestb = static_cast<uint8_t>(b);
@@ -451,13 +479,15 @@ public:
     }
   }
 
-  void __encodeArray(const uint32_t *in, const size_t length, uint32_t *out, size_t &nvalue) {
+  void __encodeArray(const uint32_t *in, const size_t length, uint32_t *out,
+                     size_t &nvalue) {
     uint32_t *const initout = out; // keep track of this
     checkifdivisibleby(length, BlockSize);
     uint32_t *const headerout = out++; // keep track of this
     datatobepacked.clear();
     uint8_t *bc = &bytescontainer[0];
-    for (const uint32_t *const final = in + length; (in + BlockSize <= final); in += BlockSize) {
+    for (const uint32_t *const final = in + length; (in + BlockSize <= final);
+         in += BlockSize) {
       uint8_t bestb, bestcexcept, maxb;
       getBestBFromData(in, bestb, bestcexcept, maxb);
       *bc++ = bestb;
@@ -478,21 +508,24 @@ public:
       // out = packblockup<BlockSize>(in, out, bestb);
     }
     headerout[0] = static_cast<uint32_t>(out - headerout);
-    const uint32_t bytescontainersize = static_cast<uint32_t>(bc - &bytescontainer[0]);
+    const uint32_t bytescontainersize =
+        static_cast<uint32_t>(bc - &bytescontainer[0]);
     *(out++) = bytescontainersize;
     memcpy(out, &bytescontainer[0], bytescontainersize);
-    uint8_t *pad8 = (uint8_t *)out + bytescontainersize;
+    uint8_t* pad8 = (uint8_t*)out + bytescontainersize;
     out += (bytescontainersize + sizeof(uint32_t) - 1) / sizeof(uint32_t);
-    while (pad8 < (uint8_t *)out)
-      *pad8++ = 0; // clear padding bytes
+    while (pad8 < (uint8_t*)out)
+        *pad8++ = 0; // clear padding bytes
 
     size_t outcap = 0;
-    ecoder.encodeArray(datatobepacked.data(), datatobepacked.size(), out, outcap);
+    ecoder.encodeArray(datatobepacked.data(), datatobepacked.size(), out,
+                       outcap);
     out += outcap;
     nvalue = out - initout;
   }
 
-  void __decodeArray(const uint32_t *in, size_t &length, uint32_t *out, const size_t nvalue) {
+  void __decodeArray(const uint32_t *in, size_t &length, uint32_t *out,
+                     const size_t nvalue) {
     const uint32_t *const initin = in;
     const uint32_t *const headerin = in++;
     const uint32_t wheremeta = headerin[0];

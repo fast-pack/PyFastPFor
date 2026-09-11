@@ -1,0 +1,87 @@
+name: Build and upload wheels
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+\.[0-9]+\.[0-9]+'
+  pull_request: # Test builds on PR
+  workflow_dispatch: # Allows manual triggering
+
+# The Python project lives in the python_bindings/ subdirectory and reaches the
+# C++ sources through a `fastpfor` symlink to the repository root. That symlink
+# is fine for local builds but does not survive being copied into cibuildwheel's
+# build containers (and is not preserved on Windows checkouts). To stay portable
+# we build a self-contained sdist first (it bundles the real header/source
+# files) and build every wheel from that extracted sdist.
+jobs:
+  build_sdist:
+    name: Build source distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.0.1
+
+      - name: Build sdist
+        run: uv build --sdist
+        working-directory: python_bindings
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sdist-artifact
+          path: python_bindings/dist/*.tar.gz
+          if-no-files-found: error
+
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    needs: build_sdist
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Native runners for each architecture we publish: x86_64 Linux,
+        # aarch64 Linux, x86_64 macOS, Apple Silicon macOS, and x86_64 Windows.
+        # macos-latest currently tracks macos-26 (arm64); macos-26-intel keeps
+        # the x86_64 macOS build on the same OS/Xcode generation.
+        # See available runner images/labels: https://github.com/actions/runner-images
+        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-26-intel, macos-26, windows-latest]
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: sdist-artifact
+          path: dist
+
+      - name: Unpack sdist
+        shell: bash
+        run: |
+          mkdir -p sdist_src
+          tar -xzf dist/*.tar.gz -C sdist_src --strip-components=1
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v4.2.1
+        with:
+          package-dir: sdist_src
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: wheel-artifact-${{ matrix.os }}
+          path: ./wheelhouse/*.whl
+          if-no-files-found: error
+
+  upload_pypi:
+    needs: [build_wheels, build_sdist]
+    runs-on: ubuntu-latest
+    # Only upload to PyPI when triggered by a tag (not manual workflow_dispatch).
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: pypa/gh-action-pypi-publish@v1.14.2
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}

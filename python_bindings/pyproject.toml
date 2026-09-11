@@ -51,8 +51,9 @@ build-frontend = "build"
 # Published wheels must run on any CPU of the target architecture, so build with
 # a portable SIMD baseline rather than -march=native (see setup.py:simd_flags).
 environment = { PYFASTPFOR_PORTABLE = "1" }
-# Smoke-test every built wheel: import it and exercise the codec factory.
-test-command = 'python -c "import pyfastpfor; assert pyfastpfor.getCodecList(); print(pyfastpfor.__version__, len(pyfastpfor.getCodecList()), \"codecs\")"'
+# Test every built wheel: round-trip every codec (see tests/test_codecs.py).
+test-requires = "pytest"
+test-command = "pytest {package}/tests -v"
 
 [tool.cibuildwheel.linux]
 archs = ["native"]

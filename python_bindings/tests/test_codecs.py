@@ -2,12 +2,22 @@
 
 from pyfastpfor import *
 import numpy as np
+import pytest
 import random
 import time
 random.seed(0)
 
+# Be careful changing these numbers: If the array size
+# is too large there will be an integer overflow.
+ARRAY_SIZES = [1, 8, 64, 1024, 1024 * 1024 * 4]
+MAX_VALUES = [256, 512, 2048]
 
-def oneTest(arrSize, maxVal, codecList):
+
+@pytest.mark.parametrize("maxVal", MAX_VALUES)
+@pytest.mark.parametrize("arrSize", ARRAY_SIZES)
+def test_codecs_roundtrip(arrSize, maxVal):
+    codecList = getCodecList()
+
     inpSmall = np.array(np.random.randint(
         0, maxVal, arrSize), dtype=np.uint32).ravel()
     inpPrefSum = np.array(inpSmall, dtype=np.uint32, copy=True).ravel()
@@ -38,9 +48,9 @@ def oneTest(arrSize, maxVal, codecList):
         for diffType in range(3):
 
             if diffType == 0:
-                inp = np.array([e for e in inpSmall], dtype=np.uint32).ravel()
+                inp = np.array(inpSmall, dtype=np.uint32, copy=True).ravel()
             else:
-                inp = np.array([e for e in inpPrefSum], dtype=np.uint32).ravel()
+                inp = np.array(inpPrefSum, dtype=np.uint32, copy=True).ravel()
 
             if diffType == 1:
                 delta1(inp, arrSize)
@@ -77,20 +87,4 @@ def oneTest(arrSize, maxVal, codecList):
 
 
 if __name__ == '__main__':
-
-    codecList = getCodecList()
-
-    # Be careful changing these numbers: If the array size
-    # is too large there will be an integer overflow.
-    arraySizes = [1, 8, 64, 1024, 1024 * 1024 * 4]
-    maxValues = [256, 512, 2048]
-
-    i = 0
-    for arraySize in arraySizes:
-        for maxValue in maxValues:
-            print("--------------------------------------------------------------------------------")
-            print("                              Test Case %d/%d" % (i, len(arraySizes)*len(maxValues)))
-            print("--------------------------------------------------------------------------------")
-            oneTest(arraySize, maxValue, codecList)
-            print("\n")
-            i += 1
+    raise SystemExit(pytest.main([__file__, "-v"]))

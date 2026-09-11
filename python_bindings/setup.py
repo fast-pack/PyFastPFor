@@ -104,7 +104,7 @@ class BuildExt(build_ext):
     # because this extension mixes C and C++ sources and a C++ standard flag is
     # rejected by the compiler on C sources (and vice versa).
     c_opts = {
-        'msvc': ['/EHsc', '/openmp', '/O2'],
+        'msvc': ['/EHsc', '/O2'],
         'unix': ['-O3'],
         #'unix': ['-O0', '-g'],
     }
@@ -117,8 +117,7 @@ class BuildExt(build_ext):
         c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.9']
         link_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.9']
     else:
-        c_opts['unix'].append("-fopenmp")
-        link_opts['unix'].extend(['-fopenmp', '-pthread'])
+        link_opts['unix'].append('-pthread')
 
     def build_extensions(self):
         ct = self.compiler.compiler_type

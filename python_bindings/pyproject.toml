@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=77.0.0", "wheel", "pybind11>=2.4", "numpy"]
+requires = ["setuptools>=77.0.0", "wheel", "pybind11>=2.13", "numpy"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -45,7 +45,9 @@ py-modules = []
 
 [tool.cibuildwheel]
 # Skip PyPy (the pybind11 extension targets CPython) and the slow/rare 32-bit
-# and musllinux targets to keep the wheel matrix lean.
+# and musllinux targets to keep the wheel matrix lean. Free-threaded ("t")
+# builds are included: the module declares py::mod_gil_not_used() (see
+# pyfastpfor.cc).
 skip = ["pp*", "*-musllinux*", "*_i686", "*-win32"]
 build-frontend = "build"
 # Published wheels must run on any CPU of the target architecture, so build with

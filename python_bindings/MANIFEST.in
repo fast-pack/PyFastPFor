@@ -3,7 +3,6 @@ include pyproject.toml
 recursive-include ./fastpfor/src *.cpp *.c
 recursive-include ./fastpfor/headers *.h
 recursive-include tests *.py
-include requirements.txt
 
 global-exclude fastpfor/src/benchbitpacking.cpp
 global-exclude fastpfor/src/csv2maropu.cpp

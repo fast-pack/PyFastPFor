@@ -1,6 +1,8 @@
 [![PyPI version](https://img.shields.io/pypi/v/pyfastpfor.svg)](https://pypi.python.org/pypi/pyfastpfor/)
 [![Downloads](https://pepy.tech/badge/pyfastpfor)](https://pepy.tech/project/pyfastpfor)
+
 # PyFastPFor
+
 Python bindings for the fast **light-weight** integer compression library [FastPFor](https://github.com/lemire/FastPFor): A research library with integer compression schemes. FastPFor is broadly applicable to the compression of arrays of 32-bit integers where most integers are small. The library seeks to exploit SIMD instructions (SSE) whenever possible. This library can decode at least 4 billions of compressed integers per second on most desktop or laptop processors. That is, it can decompress data at a rate of 15 GB/s. This is significantly faster than generic codecs like gzip, LZO, Snappy or LZ4.
 
 # Authors
@@ -9,31 +11,65 @@ Daniel Lemire, Leonid Boytsov, Owen Kaser, Maxime Caron, Louis Dionne, Michel Le
 
 # Installation
 
-Bindings can be installed locally:
-```
-cd python_bindings
-pip install -r requirements.txt
-sudo setup.py build install
-```
-or via pip:
+Install the latest release from PyPI:
+
 ```
 pip install pyfastpfor
 ```
+
+### Using uv (recommended)
+
+[uv](https://github.com/astral-sh/uv) is a fast Python package installer and resolver.
+
+To add PyFastPFor as a dependency to your project:
+
+```
+uv add pyfastpfor
+```
+
+Or to install it directly into your current environment:
+
+```
+uv pip install pyfastpfor
+```
+
+### Building from source
+
+From the repository root, run:
+
+```
+cd python_bindings
+```
+
+With uv:
+
+```
+uv build
+uv pip install dist/*.whl
+```
+
+Or with standard tools:
+
+```
+pip install build
+python -m build
+pip install dist/*.whl
+```
+
 The bindings build with GCC or Clang, on both x86-64 (SSE/AVX) and ARM/aarch64 (NEON, including Apple Silicon). You may also need to install Python dev-files. On Ubuntu, for Python 3 you can do it as follows:
 
 ```
 sudo apt-get install python3-dev
 ```
 
-
 # Documentation
 
-The library supports all the codecs implemented in the original [FastPFor](https://github.com/lemire/FastPFor) library (v0.5.0). To get a list of codecs, use the function ``getCodecList``. 
+The library supports all the codecs implemented in the original [FastPFor](https://github.com/lemire/FastPFor) library (v0.5.0). To get a list of codecs, use the function ``getCodecList``.
 
-Typical light-weight compression does not take context into account and, consequently, works well only for small integers. When integers are large, data differencing is a common trick to make integers small. In particular, we often deal with sorted lists of integers, which can be represented by differences between neighboring numbers. 
+Typical light-weight compression does not take context into account and, consequently, works well only for small integers. When integers are large, data differencing is a common trick to make integers small. In particular, we often deal with sorted lists of integers, which can be represented by differences between neighboring numbers.
 
-The smallest differences (**fine** deltas) are between adjacent numbers. Respective differencing and difference inverting functions are ``delta1'' and ``prefixSum1''.
+The smallest differences (**fine** deltas) are between adjacent numbers. Respective differencing and difference inverting functions are ``delta1'' and``prefixSum1''.
 
-However, we can do reasonably well, we compute differences between numbers that are four positions apart (**coarse** deltas). Such differences can be computed and inverted more efficiently.  Respective differencing and difference inverting functions are ``delta4'' and ``prefixSum4''.
+However, we can do reasonably well, we compute differences between numbers that are four positions apart (**coarse** deltas). Such differences can be computed and inverted more efficiently.  Respective differencing and difference inverting functions are ``delta4'' and``prefixSum4''.
 
-Examples of three common use scenarios (no differencing, coarse and fine deltas) are outlined in [this Python notebook](python_bindings/examples.ipynb). 
+Examples of three common use scenarios (no differencing, coarse and fine deltas) are outlined in [this Python notebook](python_bindings/examples.ipynb).

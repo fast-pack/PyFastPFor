@@ -33,7 +33,26 @@ Or to install it directly into your current environment:
 uv pip install pyfastpfor
 ```
 
-### Building from source
+### Native builds
+
+Native builds automatically use `-march=native` on Unix-like platforms when
+the compiler supports it. Set `PYFASTPFOR_PORTABLE=1` for a portable build.
+
+#### Install from Git
+
+To build and install the native extension directly from the latest Git source:
+
+```
+pip install "pyfastpfor @ git+https://github.com/fast-pack/PyFastPFor.git#subdirectory=python_bindings"
+```
+
+With uv:
+
+```
+uv pip install "pyfastpfor @ git+https://github.com/fast-pack/PyFastPFor.git#subdirectory=python_bindings"
+```
+
+#### Build a local checkout
 
 From the repository root, run:
 
